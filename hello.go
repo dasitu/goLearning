@@ -5,7 +5,22 @@ import (
 	"math"
 	"runtime"
 	"time"
+	"math/rand"
+	"strings"
+	//"golang.org/x/tour/pic"
 )
+
+/* basic types
+bool
+string
+int  int8  int16  int32  int64
+uint uint8 uint16 uint32 uint64 uintptr
+byte // alias for uint8
+rune // alias for int32
+     // represents a Unicode code point
+float32 float64
+complex64 complex128
+*/
 
 func pow(x, n, lim float64) float64 {
 	if v := math.Pow(x, n); v < lim {
@@ -16,8 +31,7 @@ func pow(x, n, lim float64) float64 {
 
 // Sqrt exported comment
 func Sqrt(x float64) float64 {
-	z := 1.0
-	lastZ := 1.0
+	z, lastZ := 1.0, 1.0
 	for i := 0; i < 1000; i++ {
 		z -= (z*z - x) / (2 * z)
 		fmt.Println("trying:", i, z)
@@ -30,11 +44,117 @@ func Sqrt(x float64) float64 {
 	return z
 }
 
+// IncreaseOne will use pointer to add 1
+func IncreaseOne(pointer *int) {
+	fmt.Println("address:", pointer, ", value: ", *pointer)
+	*pointer++
+}
+
+
+func printSlice(s []int) {
+	// TODO: how to define general []T? 
+	fmt.Printf("len=%d cap=%d %v\n", len(s), cap(s), s)
+	for i, v := range s {
+		fmt.Printf("index:[%d] = value:%d\n", i, v)
+	}
+}
+
+
+func createDatas(dx, dy int) [][]uint8 {
+	// need to import "golang.org/x/tour/pic"
+	samples := make([][]uint8, dy)
+	for y:=0;y<dy;y++{
+		samples[y] = make([]uint8,dx)
+		for x:=0;x<dx;x++{
+			//samples[y][x]= uint8((x+y)/2)
+			//samples[y][x]= uint8(x*y)
+			//samples[y][x]= uint8(x^y)
+			samples[y][x] = uint8(float64(x)*math.Log(float64(y)))
+			//samples[y][x]= uint8(x%(y+1))
+		}
+	}
+	return samples
+}
+
+
+func wordCount(s string) map[string]int {
+	wordCount := make(map[string]int)
+	for _, v := range strings.Fields(s) {
+		_, ok := wordCount[v]
+		if ok == true {
+			wordCount[v]++
+		}else{
+			wordCount[v] = 1
+		}
+	}
+	return wordCount
+}
+
+// function value
+func compute(fn func(float64, float64) float64) float64 {
+	return fn(3, 4)
+}
+
+// function closure
+func adder() func(int) int {
+	sum := 0
+	return func(x int) int {
+		sum += x
+		return sum
+	}
+}
+
+// function closure
+func fibonacci() func() int {
+	fn, fn1 := 0, 1
+	return func() int{
+		temp := fn
+		fn, fn1 = fn1, fn + fn1
+		return temp
+	}
+}
+
+// Vertex type can have function then work as class
+type Vertex struct {
+	X, Y float64
+}
+
+// Abs serves type Vertex
+func (v Vertex) Abs() float64 {
+	return math.Sqrt(v.X*v.X + v.Y*v.Y)
+}
+
 func main() {
-	fmt.Println(pow(3, 2, 10), pow(3, 3, 20))
+	// constant cannot be deleared using := syntax
+	// variable can be decleared in group
+	const (
+		Pi = 3.14
+		// Create a huge number by shifting a 1 bit left 100 places.
+		// In other words, the binary number that is 1 followed by 100 zeroes.
+		Big = 1 << 100
+		// Shift it right again 99 places, so we end up with 1<<1, or 2.
+		Small = Big >> 99
+	)
 
-	fmt.Println(Sqrt(5))
+	// final print defer stack
+	for i := 0; i < 3; i++ {
+		defer fmt.Println("defer stack:", i)
+	}
 
+	// random number
+	fmt.Println("My favorite number is", rand.Intn(10))
+
+	// declear more variable at the sametime with the same type
+	var test1, test2, test3 int = 10, 20, 5
+
+	// local variable can not be used ourside
+	// type convension
+	fmt.Println(pow(3, 2, float64(test1)), pow(3, 3, float64(test2)))
+
+	// try for loop
+	fmt.Println(Sqrt(float64(test3)))
+
+	// try switch case for string
 	fmt.Print("Go runs on ")
 	switch os := runtime.GOOS; os {
 	case "darwin":
@@ -47,6 +167,7 @@ func main() {
 		fmt.Printf("%s.\n", os)
 	}
 
+	// switch case for value
 	fmt.Println("When's Saturday?")
 	today := time.Now().Weekday()
 	switch time.Saturday {
@@ -59,4 +180,75 @@ func main() {
 	default:
 		fmt.Println("Too far away.")
 	}
+
+	// pointer usage
+	v := 1
+	IncreaseOne(&v)
+	fmt.Println("value after increasing by pointer: ", v)
+
+	// struct
+	vex := Vertex{Y:1}
+	p := &vex
+	fmt.Println("struct vertex:", vex)
+	fmt.Println("first value of vertex:", vex.X)
+	fmt.Println("access vertex by pointer:", p.Y)
+
+	// slice
+	var empty []int
+	a := []int{0,1,2,3,4,5,6,7}
+	fmt.Print("created slice a:")
+	printSlice(a)
+	fmt.Print("a[1:5]：")
+	printSlice(a[1:5])
+	newA := append(a, 8)
+	fmt.Print("append slice newA:")
+	printSlice(newA)
+	// TODO: why not just expand 1 cap?
+	b := make([]int, 3)
+	fmt.Print("slice created by make:")
+	printSlice(b)
+	if empty == nil {
+		fmt.Println("this slice is nil")
+		printSlice(empty)
+	}
+	// 创建一个井字板（经典游戏）
+	board := [][]string{
+		[]string{"_", "_", "_"},
+		[]string{"_", "_", "_"},
+		[]string{"_", "_", "_"},
+	}
+
+	// 两个玩家轮流打上 X 和 O
+	board[0][0] = "X"
+	board[2][2] = "O"
+	board[1][2] = "X"
+	board[1][0] = "O"
+	board[0][2] = "X"
+
+	for i := 0; i < len(board); i++ {
+		fmt.Printf("%s\n", strings.Join(board[i], " "))
+	}
+
+	fmt.Printf("Fields are: %q\n", strings.Fields("  foo bar  baz   "))
+	
+	// function value
+	hypot := func(x, y float64) float64 {
+		return math.Sqrt(x*x + y*y)
+	}
+	fmt.Println(hypot(5, 12))
+
+	fmt.Println(compute(hypot))
+	fmt.Println(compute(math.Pow))
+
+	// function closure
+	pos, neg := adder(), adder()
+	for i := 0; i < 10; i++ {
+		fmt.Println(
+			pos(i),
+			neg(-2*i),
+		)
+	}
+
+	v1 := Vertex{3, 4}
+	fmt.Println(v1.Abs())
 }

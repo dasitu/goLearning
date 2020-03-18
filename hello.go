@@ -8,6 +8,9 @@ import (
 	"math/rand"
 	"strings"
 	//"golang.org/x/tour/pic"
+	"strconv"
+	"io"
+	"os"
 )
 
 /* basic types
@@ -29,9 +32,22 @@ func pow(x, n, lim float64) float64 {
 	return lim
 }
 
+// ErrNegativeSqrt is the error
+type ErrNegativeSqrt float64
+
+func (e ErrNegativeSqrt) Error() string{
+	// TODO: without float64 type casting, program will go to infinit loop
+	return fmt.Sprintf("cannot Sqrt negative number: %v", float64(e))
+}
+
 // Sqrt exported comment
-func Sqrt(x float64) float64 {
-	z, lastZ := 1.0, 1.0
+func Sqrt(x float64) (float64, error) {
+	if x<0 {
+		return 0.0, ErrNegativeSqrt(x)
+	}
+	
+	z := 1.0
+	lastZ := 1.0
 	for i := 0; i < 1000; i++ {
 		z -= (z*z - x) / (2 * z)
 		fmt.Println("trying:", i, z)
@@ -41,7 +57,7 @@ func Sqrt(x float64) float64 {
 			lastZ = z
 		}
 	}
-	return z
+	return z, nil
 }
 
 // IncreaseOne will use pointer to add 1
@@ -119,9 +135,91 @@ type Vertex struct {
 	X, Y float64
 }
 
-// Abs serves type Vertex
-func (v Vertex) Abs() float64 {
+// Scale method, pointer receiver can be used to update the value directly
+func (v *Vertex) Scale(f float64) {
+	v.X = v.X * f
+	v.Y = v.Y * f
+}
+
+// Abs is the implementation of interface Abser
+func (v *Vertex) Abs() float64 {
 	return math.Sqrt(v.X*v.X + v.Y*v.Y)
+}
+
+//
+func (v Vertex) String() string {
+	return fmt.Sprintf("Vertex.X=%v Vertex.Y=%v", v.X, v.Y)
+}
+
+// Abser interface
+type Abser interface {
+	Abs() float64
+}
+
+type myFloat float64
+
+func (f myFloat) Abs() float64 {
+	if f < 0 {
+		return float64(-f)
+	}
+	return float64(f)
+}
+
+// assert type by interface
+func assertType(i interface{}){
+	switch v := i.(type) {
+	case int:
+		fmt.Printf("%v is int\n", v)
+	case float64:
+		fmt.Printf("%v is float64\n", v)
+	case string:
+		fmt.Printf("%q is %v bytes long string\n", v, len(v))
+	default:
+		fmt.Printf("I don't know about type %T!\n", v)
+	}
+}
+
+// IPAddr is the type
+type IPAddr [4]byte
+
+// String method for IPAddr
+func (ip IPAddr) String() string{
+	output := make([]string, 4)
+	for i, v := range ip{
+		// TODO: more useful about strconv?
+		output[i] = strconv.Itoa(int(v))
+	}
+	a := strings.Join(output, ".")
+	//b := fmt.Sprintf("%v.%v.%v.%v", ip[0],ip[1],ip[2],ip[3])
+	return a
+}
+
+
+type rot13Reader struct {
+	r io.Reader
+}
+
+func (rot13 rot13Reader) Read(b []byte) (int, error){
+	n, err := rot13.r.Read(b)
+	for i, v := range b {
+		switch {
+			case int(v) > 122: // > z
+				//fmt.Println("invalid input string")
+				break
+			case int(v) > 109: // n-z
+				b[i] -= 13
+			case int(v) > 96: // a-m
+				b[i] += 13
+			case int(v) > 90: // > Z
+				//fmt.Println("invalid input string")
+				break
+			case int(v) > 77: // N-Z
+				b[i] -= 13
+			case int(v) > 64: // A-M
+				b[i] += 13
+		}
+	}
+	return n, err
 }
 
 func main() {
@@ -250,5 +348,48 @@ func main() {
 	}
 
 	v1 := Vertex{3, 4}
+	fmt.Println(v1)
+	v1.Scale(10)
 	fmt.Println(v1.Abs())
+
+	// interface usage
+	var inter Abser
+	f := myFloat(-1)
+	inter = &v1
+	fmt.Println(inter.Abs())
+	inter = f
+	fmt.Println(inter.Abs())
+
+	// assertType by empty interface
+	assertType("this is string")
+	assertType(3.1)
+	assertType(0)
+	assertType(nil)
+	assertType(v1)
+
+	hosts := map[string]IPAddr{
+		"loopback":  {127, 0, 0, 1},
+		"googleDNS": {8, 8, 8, 8},
+	}
+	for name, ip := range hosts {
+		fmt.Printf("%v: %v\n", name, ip)
+	}
+
+	result, err := Sqrt(2)
+	if err == nil{
+		fmt.Println(result)
+	} else{
+		fmt.Println(err)
+	}
+
+	result, err = Sqrt(-2)
+	if err == nil{
+		fmt.Println(result)
+	} else{
+		fmt.Println(err)
+	}
+
+	s := strings.NewReader("Lbh penpxrq gur pbqr!")
+	r := rot13Reader{s}
+	io.Copy(os.Stdout, &r)
 }

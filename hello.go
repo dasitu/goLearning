@@ -3,14 +3,15 @@ package main
 import (
 	"fmt"
 	"math"
-	"runtime"
-	"time"
 	"math/rand"
+	"runtime"
 	"strings"
+	"time"
+
 	//"golang.org/x/tour/pic"
-	"strconv"
 	"io"
 	"os"
+	"strconv"
 )
 
 /* basic types
@@ -35,17 +36,17 @@ func pow(x, n, lim float64) float64 {
 // ErrNegativeSqrt is the error
 type ErrNegativeSqrt float64
 
-func (e ErrNegativeSqrt) Error() string{
+func (e ErrNegativeSqrt) Error() string {
 	// TODO: without float64 type casting, program will go to infinit loop
 	return fmt.Sprintf("cannot Sqrt negative number: %v", float64(e))
 }
 
 // Sqrt exported comment
 func Sqrt(x float64) (float64, error) {
-	if x<0 {
+	if x < 0 {
 		return 0.0, ErrNegativeSqrt(x)
 	}
-	
+
 	z := 1.0
 	lastZ := 1.0
 	for i := 0; i < 1000; i++ {
@@ -66,32 +67,29 @@ func IncreaseOne(pointer *int) {
 	*pointer++
 }
 
-
 func printSlice(s []int) {
-	// TODO: how to define general []T? 
+	// TODO: how to define general []T?
 	fmt.Printf("len=%d cap=%d %v\n", len(s), cap(s), s)
 	for i, v := range s {
 		fmt.Printf("index:[%d] = value:%d\n", i, v)
 	}
 }
 
-
 func createDatas(dx, dy int) [][]uint8 {
 	// need to import "golang.org/x/tour/pic"
 	samples := make([][]uint8, dy)
-	for y:=0;y<dy;y++{
-		samples[y] = make([]uint8,dx)
-		for x:=0;x<dx;x++{
+	for y := 0; y < dy; y++ {
+		samples[y] = make([]uint8, dx)
+		for x := 0; x < dx; x++ {
 			//samples[y][x]= uint8((x+y)/2)
 			//samples[y][x]= uint8(x*y)
 			//samples[y][x]= uint8(x^y)
-			samples[y][x] = uint8(float64(x)*math.Log(float64(y)))
+			samples[y][x] = uint8(float64(x) * math.Log(float64(y)))
 			//samples[y][x]= uint8(x%(y+1))
 		}
 	}
 	return samples
 }
-
 
 func wordCount(s string) map[string]int {
 	wordCount := make(map[string]int)
@@ -99,7 +97,7 @@ func wordCount(s string) map[string]int {
 		_, ok := wordCount[v]
 		if ok == true {
 			wordCount[v]++
-		}else{
+		} else {
 			wordCount[v] = 1
 		}
 	}
@@ -123,9 +121,9 @@ func adder() func(int) int {
 // function closure
 func fibonacci() func() int {
 	fn, fn1 := 0, 1
-	return func() int{
+	return func() int {
 		temp := fn
-		fn, fn1 = fn1, fn + fn1
+		fn, fn1 = fn1, fn+fn1
 		return temp
 	}
 }
@@ -166,7 +164,7 @@ func (f myFloat) Abs() float64 {
 }
 
 // assert type by interface
-func assertType(i interface{}){
+func assertType(i interface{}) {
 	switch v := i.(type) {
 	case int:
 		fmt.Printf("%v is int\n", v)
@@ -183,9 +181,9 @@ func assertType(i interface{}){
 type IPAddr [4]byte
 
 // String method for IPAddr
-func (ip IPAddr) String() string{
+func (ip IPAddr) String() string {
 	output := make([]string, 4)
-	for i, v := range ip{
+	for i, v := range ip {
 		// TODO: more useful about strconv?
 		output[i] = strconv.Itoa(int(v))
 	}
@@ -194,29 +192,28 @@ func (ip IPAddr) String() string{
 	return a
 }
 
-
 type rot13Reader struct {
 	r io.Reader
 }
 
-func (rot13 rot13Reader) Read(b []byte) (int, error){
+func (rot13 rot13Reader) Read(b []byte) (int, error) {
 	n, err := rot13.r.Read(b)
 	for i, v := range b {
 		switch {
-			case int(v) > 122: // > z
-				//fmt.Println("invalid input string")
-				break
-			case int(v) > 109: // n-z
-				b[i] -= 13
-			case int(v) > 96: // a-m
-				b[i] += 13
-			case int(v) > 90: // > Z
-				//fmt.Println("invalid input string")
-				break
-			case int(v) > 77: // N-Z
-				b[i] -= 13
-			case int(v) > 64: // A-M
-				b[i] += 13
+		case int(v) > 122: // > z
+			//fmt.Println("invalid input string")
+			break
+		case int(v) > 109: // n-z
+			b[i] -= 13
+		case int(v) > 96: // a-m
+			b[i] += 13
+		case int(v) > 90: // > Z
+			//fmt.Println("invalid input string")
+			break
+		case int(v) > 77: // N-Z
+			b[i] -= 13
+		case int(v) > 64: // A-M
+			b[i] += 13
 		}
 	}
 	return n, err
@@ -285,7 +282,7 @@ func main() {
 	fmt.Println("value after increasing by pointer: ", v)
 
 	// struct
-	vex := Vertex{Y:1}
+	vex := Vertex{Y: 1}
 	p := &vex
 	fmt.Println("struct vertex:", vex)
 	fmt.Println("first value of vertex:", vex.X)
@@ -293,7 +290,7 @@ func main() {
 
 	// slice
 	var empty []int
-	a := []int{0,1,2,3,4,5,6,7}
+	a := []int{0, 1, 2, 3, 4, 5, 6, 7}
 	fmt.Print("created slice a:")
 	printSlice(a)
 	fmt.Print("a[1:5]：")
@@ -328,7 +325,7 @@ func main() {
 	}
 
 	fmt.Printf("Fields are: %q\n", strings.Fields("  foo bar  baz   "))
-	
+
 	// function value
 	hypot := func(x, y float64) float64 {
 		return math.Sqrt(x*x + y*y)
@@ -376,19 +373,20 @@ func main() {
 	}
 
 	result, err := Sqrt(2)
-	if err == nil{
+	if err == nil {
 		fmt.Println(result)
-	} else{
+	} else {
 		fmt.Println(err)
 	}
 
 	result, err = Sqrt(-2)
-	if err == nil{
+	if err == nil {
 		fmt.Println(result)
-	} else{
+	} else {
 		fmt.Println(err)
 	}
 
+	// ROT-13 encryption and read from reader
 	s := strings.NewReader("Lbh penpxrq gur pbqr!")
 	r := rot13Reader{s}
 	io.Copy(os.Stdout, &r)

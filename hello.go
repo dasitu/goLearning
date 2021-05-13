@@ -1,16 +1,12 @@
-package main
+package golearning
 
 import (
 	"fmt"
 	"math"
-	"math/rand"
-	"runtime"
 	"strings"
-	"time"
 
 	//"golang.org/x/tour/pic"
 	"io"
-	"os"
 	"strconv"
 )
 
@@ -26,10 +22,18 @@ float32 float64
 complex64 complex128
 */
 
-func pow(x, n, lim float64) float64 {
+// The zero value is:
+// 0 for numeric types,
+// false for the boolean type, and
+// "" (the empty string) for strings.
+
+func powWithLimit(x, n, lim float64) float64 {
 	if v := math.Pow(x, n); v < lim {
-		return lim
+		return v
+	} else {
+		fmt.Printf("%g >= %g\n", v, lim)
 	}
+	// can't use v after "if" statement scope
 	return lim
 }
 
@@ -41,18 +45,19 @@ func (e ErrNegativeSqrt) Error() string {
 	return fmt.Sprintf("cannot Sqrt negative number: %v", float64(e))
 }
 
-// Sqrt exported comment
-func Sqrt(x float64) (float64, error) {
+// MySqrt exported comment
+func MySqrt(x float64) (float64, error) {
 	if x < 0 {
 		return 0.0, ErrNegativeSqrt(x)
 	}
+	acc := 0.000001
 
 	z := 1.0
 	lastZ := 1.0
 	for i := 0; i < 1000; i++ {
 		z -= (z*z - x) / (2 * z)
 		fmt.Println("trying:", i, z)
-		if math.Abs(lastZ-z) < 0.0001 {
+		if math.Abs(lastZ-z) < acc {
 			break
 		} else {
 			lastZ = z
@@ -67,8 +72,12 @@ func IncreaseOne(pointer *int) {
 	*pointer++
 }
 
-func printSlice(s []int) {
+func printIntArray(s []int) {
 	// TODO: how to define general []T?
+	// https://www.freecodecamp.org/news/generics-in-golang/
+	// https://blog.golang.org/why-generics#TOC_3.
+	// https://github.com/golang/go/wiki/InterfaceSlice
+	fmt.Println("print slice custmoized way.")
 	fmt.Printf("len=%d cap=%d %v\n", len(s), cap(s), s)
 	for i, v := range s {
 		fmt.Printf("index:[%d] = value:%d\n", i, v)
@@ -95,7 +104,7 @@ func wordCount(s string) map[string]int {
 	wordCount := make(map[string]int)
 	for _, v := range strings.Fields(s) {
 		_, ok := wordCount[v]
-		if ok == true {
+		if ok {
 			wordCount[v]++
 		} else {
 			wordCount[v] = 1
@@ -217,177 +226,4 @@ func (rot13 rot13Reader) Read(b []byte) (int, error) {
 		}
 	}
 	return n, err
-}
-
-func main() {
-	// constant cannot be deleared using := syntax
-	// variable can be decleared in group
-	const (
-		Pi = 3.14
-		// Create a huge number by shifting a 1 bit left 100 places.
-		// In other words, the binary number that is 1 followed by 100 zeroes.
-		Big = 1 << 100
-		// Shift it right again 99 places, so we end up with 1<<1, or 2.
-		Small = Big >> 99
-	)
-
-	// final print defer stack
-	for i := 0; i < 3; i++ {
-		defer fmt.Println("defer stack:", i)
-	}
-
-	// random number
-	fmt.Println("My favorite number is", rand.Intn(10))
-
-	// declear more variable at the sametime with the same type
-	var test1, test2, test3 int = 10, 20, 5
-
-	// local variable can not be used ourside
-	// type convension
-	fmt.Println(pow(3, 2, float64(test1)), pow(3, 3, float64(test2)))
-
-	// try for loop
-	fmt.Println(Sqrt(float64(test3)))
-
-	// try switch case for string
-	fmt.Print("Go runs on ")
-	switch os := runtime.GOOS; os {
-	case "darwin":
-		fmt.Println("OS X.")
-	case "linux":
-		fmt.Println("Linux.")
-	default:
-		// freebsd, openbsd,
-		// plan9, windows...
-		fmt.Printf("%s.\n", os)
-	}
-
-	// switch case for value
-	fmt.Println("When's Saturday?")
-	today := time.Now().Weekday()
-	switch time.Saturday {
-	case today + 0:
-		fmt.Println("Today.")
-	case today + 1:
-		fmt.Println("Tomorrow.")
-	case today + 2:
-		fmt.Println("In two days.")
-	default:
-		fmt.Println("Too far away.")
-	}
-
-	// pointer usage
-	v := 1
-	IncreaseOne(&v)
-	fmt.Println("value after increasing by pointer: ", v)
-
-	// struct
-	vex := Vertex{Y: 1}
-	p := &vex
-	fmt.Println("struct vertex:", vex)
-	fmt.Println("first value of vertex:", vex.X)
-	fmt.Println("access vertex by pointer:", p.Y)
-
-	// slice
-	var empty []int
-	a := []int{0, 1, 2, 3, 4, 5, 6, 7}
-	fmt.Print("created slice a:")
-	printSlice(a)
-	fmt.Print("a[1:5]：")
-	printSlice(a[1:5])
-	newA := append(a, 8)
-	fmt.Print("append slice newA:")
-	printSlice(newA)
-	// TODO: why not just expand 1 cap?
-	b := make([]int, 3)
-	fmt.Print("slice created by make:")
-	printSlice(b)
-	if empty == nil {
-		fmt.Println("this slice is nil")
-		printSlice(empty)
-	}
-	// 创建一个井字板（经典游戏）
-	board := [][]string{
-		[]string{"_", "_", "_"},
-		[]string{"_", "_", "_"},
-		[]string{"_", "_", "_"},
-	}
-
-	// 两个玩家轮流打上 X 和 O
-	board[0][0] = "X"
-	board[2][2] = "O"
-	board[1][2] = "X"
-	board[1][0] = "O"
-	board[0][2] = "X"
-
-	for i := 0; i < len(board); i++ {
-		fmt.Printf("%s\n", strings.Join(board[i], " "))
-	}
-
-	fmt.Printf("Fields are: %q\n", strings.Fields("  foo bar  baz   "))
-
-	// function value
-	hypot := func(x, y float64) float64 {
-		return math.Sqrt(x*x + y*y)
-	}
-	fmt.Println(hypot(5, 12))
-
-	fmt.Println(compute(hypot))
-	fmt.Println(compute(math.Pow))
-
-	// function closure
-	pos, neg := adder(), adder()
-	for i := 0; i < 10; i++ {
-		fmt.Println(
-			pos(i),
-			neg(-2*i),
-		)
-	}
-
-	v1 := Vertex{3, 4}
-	fmt.Println(v1)
-	v1.Scale(10)
-	fmt.Println(v1.Abs())
-
-	// interface usage
-	var inter Abser
-	f := myFloat(-1)
-	inter = &v1
-	fmt.Println(inter.Abs())
-	inter = f
-	fmt.Println(inter.Abs())
-
-	// assertType by empty interface
-	assertType("this is string")
-	assertType(3.1)
-	assertType(0)
-	assertType(nil)
-	assertType(v1)
-
-	hosts := map[string]IPAddr{
-		"loopback":  {127, 0, 0, 1},
-		"googleDNS": {8, 8, 8, 8},
-	}
-	for name, ip := range hosts {
-		fmt.Printf("%v: %v\n", name, ip)
-	}
-
-	result, err := Sqrt(2)
-	if err == nil {
-		fmt.Println(result)
-	} else {
-		fmt.Println(err)
-	}
-
-	result, err = Sqrt(-2)
-	if err == nil {
-		fmt.Println(result)
-	} else {
-		fmt.Println(err)
-	}
-
-	// ROT-13 encryption and read from reader
-	s := strings.NewReader("Lbh penpxrq gur pbqr!")
-	r := rot13Reader{s}
-	io.Copy(os.Stdout, &r)
 }

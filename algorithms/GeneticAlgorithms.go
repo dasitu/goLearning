@@ -7,10 +7,10 @@ import (
 	"time"
 )
 
-const letters = "abcdefghijklmnopqrstuvwxyz "
+const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
 
 func getAnswer() chromosome {
-	return "this is secret"
+	return "Nit7R6hviiyKHEuj"
 }
 
 type chromosome string
@@ -115,19 +115,26 @@ func generation(p population) population {
 }
 
 func main() {
+	start := time.Now()
+
 	rand.Seed(time.Now().UnixNano())
 	chromSize := len(getAnswer())
 	popSize := 10
 	p := createPopulation(popSize, chromSize)
 	answer := chromosome("")
+	c := 0
 	for answer == "" {
 		p = generation(p)
-		fmt.Println("mean score:", getMeanScore(p))
+		fmt.Printf("[%v]mean score:%v\n", c, getMeanScore(p))
 		for _, i := range p {
 			if i.chrom == getAnswer() {
 				answer = i.chrom
 			}
 		}
+		c++
 	}
 	fmt.Println(answer)
+
+	elapsed := time.Since(start)
+	fmt.Printf("took %s", elapsed)
 }

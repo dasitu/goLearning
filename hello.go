@@ -211,14 +211,12 @@ func (rot13 rot13Reader) Read(b []byte) (int, error) {
 		switch {
 		case int(v) > 122: // > z
 			//fmt.Println("invalid input string")
-			break
 		case int(v) > 109: // n-z
 			b[i] -= 13
 		case int(v) > 96: // a-m
 			b[i] += 13
 		case int(v) > 90: // > Z
 			//fmt.Println("invalid input string")
-			break
 		case int(v) > 77: // N-Z
 			b[i] -= 13
 		case int(v) > 64: // A-M

@@ -4,10 +4,13 @@ import (
 	"fmt"
 	"math"
 	"strings"
+	"time"
 
 	//"golang.org/x/tour/pic"
 	"io"
 	"strconv"
+
+	"golang.org/x/tour/tree"
 )
 
 /* basic types
@@ -127,6 +130,28 @@ func adder() func(int) int {
 	}
 }
 
+func selectFibonacci(c, quit chan int) {
+	x, y := 0, 1
+	for {
+		select {
+		case c <- x:
+			x, y = y, x+y
+		case <-quit:
+			fmt.Println("quit")
+			return
+		}
+	}
+}
+
+func chanFibonacci(n int, c chan int) {
+	x, y := 0, 1
+	for i := 0; i < n; i++ {
+		c <- x
+		x, y = y, x+y
+	}
+	close(c)
+}
+
 // function closure
 func fibonacci() func() int {
 	fn, fn1 := 0, 1
@@ -173,16 +198,20 @@ func (f myFloat) Abs() float64 {
 }
 
 // assert type by interface
-func assertType(i interface{}) {
-	switch v := i.(type) {
+func assertType(i interface{}) string {
+	switch i.(type) {
 	case int:
-		fmt.Printf("%v is int\n", v)
+		return "int"
 	case float64:
-		fmt.Printf("%v is float64\n", v)
+		return "float64"
 	case string:
-		fmt.Printf("%q is %v bytes long string\n", v, len(v))
+		return "string"
+	case nil:
+		return "nil"
+	case Vertex:
+		return "Vertex"
 	default:
-		fmt.Printf("I don't know about type %T!\n", v)
+		return "unknown"
 	}
 }
 
@@ -224,4 +253,53 @@ func (rot13 rot13Reader) Read(b []byte) (int, error) {
 		}
 	}
 	return n, err
+}
+
+func say(s string) {
+	for i := 0; i < 5; i++ {
+		time.Sleep(100 * time.Millisecond)
+		fmt.Println(s)
+	}
+}
+
+func sum1(s []int) int {
+	sum := 0
+	for _, v := range s {
+		sum += v
+	}
+	return sum
+}
+
+func sum(s []int, c chan int) {
+	sum := 0
+	for _, v := range s {
+		sum += v
+	}
+	c <- sum // send sum to c
+}
+
+// Walk walks the tree t sending all values
+// from the tree to the channel ch.
+func Walk(t *tree.Tree, ch chan int) {
+	if t != nil {
+		Walk(t.Left, ch)
+		ch <- t.Value
+		Walk(t.Right, ch)
+	}
+}
+
+// Same determines whether the trees
+// t1 and t2 contain the same values.
+func Same(t1, t2 *tree.Tree) bool {
+	ch1 := make(chan int)
+	ch2 := make(chan int)
+	go Walk(t1, ch1)
+	go Walk(t2, ch2)
+
+	for i := 0; i < 10; i++ {
+		if <-ch1 != <-ch2 {
+			return false
+		}
+	}
+	return true
 }

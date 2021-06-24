@@ -2,14 +2,16 @@ package golearning
 
 import (
 	"fmt"
-	"io"
 	"math"
 	"math/rand"
-	"os"
+	"reflect"
 	"runtime"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	"golang.org/x/tour/tree"
 )
 
 // constant cannot be deleared using := syntax
@@ -107,7 +109,7 @@ func TestStruct(t *testing.T) {
 	// struct
 	vex := Vertex{Y: 1}
 	p := &vex
-	fmt.Println("struct vertex:", vex)
+	assert.Equal(t, "Vertex.X=0 Vertex.Y=1", fmt.Sprintf("%v", vex))
 	fmt.Println("first value of vertex:", vex.X)
 	fmt.Println("access vertex by pointer:", p.Y)
 
@@ -131,11 +133,11 @@ func TestInterface(t *testing.T) {
 	fmt.Println(abser.Abs())
 
 	// assertType by empty interface
-	assertType("this is string")
-	assertType(3.1)
-	assertType(0)
-	assertType(nil)
-	assertType(v1)
+	assert.Equal(t, "string", assertType("this is string"))
+	assert.Equal(t, "float64", assertType(3.1))
+	assert.Equal(t, "int", assertType(0))
+	assert.Equal(t, "nil", assertType(nil))
+	assert.Equal(t, "Vertex", assertType(v1))
 }
 func TestArraySlice(t *testing.T) {
 	// Array
@@ -192,6 +194,12 @@ func TestStringsFunctions(t *testing.T) {
 	fmt.Printf("Fields are: %q\n", strings.Fields("  foo bar  baz   "))
 }
 
+func TestStringField(t *testing.T) {
+	s := "a b a b c c d a a a"
+	expected := map[string]int{"a": 5, "b": 2, "c": 2, "d": 1}
+	assert.Equal(t, expected, wordCount(s))
+}
+
 func TestFunctionReference(t *testing.T) {
 	// function value
 	hypot := func(x, y float64) float64 {
@@ -207,20 +215,23 @@ func TestFunctionReference(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		fmt.Println(pos(i), neg(-2*i))
 	}
-
 	f := fibonacci()
 	for i := 0; i < 10; i++ {
 		fmt.Println(f())
 	}
 }
 
-func TestMap(t *testing.T) {
+func TestStringer(t *testing.T) {
 	hosts := map[string]IPAddr{
 		"loopback":  {127, 0, 0, 1},
 		"googleDNS": {8, 8, 8, 8},
 	}
+	expected := map[string]string{
+		"loopback":  "127.0.0.1",
+		"googleDNS": "8.8.8.8",
+	}
 	for name, ip := range hosts {
-		fmt.Printf("%v: %v\n", name, ip)
+		assert.Equal(t, expected[name], fmt.Sprintf("%v", ip))
 	}
 }
 
@@ -240,9 +251,90 @@ func TestError(t *testing.T) {
 	}
 }
 
-func TestIo(t *testing.T) {
+func TestReader(t *testing.T) {
 	// ROT-13 encryption and read from reader
 	s := strings.NewReader("Lbh penpxrq gur pbqr!")
 	r := rot13Reader{s}
-	io.Copy(os.Stdout, &r)
+	b := make([]byte, 64)
+	n, _ := r.Read(b)
+	assert.Equal(t, "You cracked the code!", string(b[:n]))
+}
+
+func TestTypeAssertion(t *testing.T) {
+	var i interface{} = "hello"
+	s := i.(string)
+	assert.Equal(t, "string", reflect.TypeOf(s).String())
+
+	var i2 interface{} = 9.2
+	s2, ok := i2.(float64)
+	assert.Equal(t, "float64", reflect.TypeOf(s2).String())
+	assert.Equal(t, true, ok)
+
+	f, ok := i.(float64)
+	assert.Equal(t, "float64", reflect.TypeOf(f).String())
+	assert.Equal(t, 0.0, f)
+	assert.Equal(t, false, ok)
+
+	assert.Panics(t, func() { f = i.(float64) }, "The code did not panic")
+}
+
+func TestGoroutines(t *testing.T) {
+	go say("folk:world")
+	say("main:hello")
+
+	count := int(math.Pow(2, 20))
+	s := make([]int, count)
+	for i := 0; i < count; i++ {
+		s[i] = i
+	}
+	start := time.Now()
+	fmt.Println(sum1(s))
+	duration1 := time.Since(start).Nanoseconds()
+	fmt.Printf("sum directly takes %v nano seconds\n", duration1)
+
+	start2 := time.Now()
+	c := make(chan int)
+	go sum(s[:len(s)/2], c)
+	go sum(s[len(s)/2:], c)
+	x, y := <-c, <-c // receive from c
+	fmt.Println(x + y)
+	duration2 := time.Since(start2).Nanoseconds()
+	fmt.Printf("sum by 2 routies takes %v nano seconds\n", duration2)
+
+	diff := duration1 - duration2
+	perc := float64(diff) / float64(duration1)
+	fmt.Printf("you saved %.2f%%, %v nano seconds\n", perc*100, diff)
+}
+
+func TestChannelRangeClose(t *testing.T) {
+	c := make(chan int, 10)
+	go chanFibonacci(cap(c), c)
+	f := fibonacci()
+	for v := range c {
+		assert.Equal(t, v, f())
+	}
+}
+
+func TestSelect(t *testing.T) {
+	c := make(chan int)
+	quit := make(chan int)
+	count := 100
+	f := fibonacci()
+	go func() {
+		for i := 0; i < count; i++ {
+			assert.Equal(t, <-c, f())
+		}
+		quit <- 0
+	}()
+	selectFibonacci(c, quit)
+}
+
+func TestChannel(t *testing.T) {
+	ch := make(chan int)
+	go Walk(tree.New(1), ch)
+	for i := 1; i < 11; i++ {
+		assert.Equal(t, i, <-ch)
+	}
+	assert.Equal(t, true, Same(tree.New(1), tree.New(1)))
+	assert.Equal(t, false, Same(tree.New(1), tree.New(2)))
 }
